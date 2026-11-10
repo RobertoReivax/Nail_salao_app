@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-amber-50 border-l-4 border-amber-500 p-6 rounded-2xl shadow-sm mt-10">
+    <div class="flex items-center mb-4">
+        <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl mr-3"></i>
+        <h3 class="font-bold text-amber-800 text-lg">Conflito de Horário Detectado!</h3>
+    </div>
+    <p class="text-sm text-amber-700 mb-4">
+        O(a) colaborador(a) <strong>{{ collab_name }}</strong> já possui outro agendamento marcado para o dia <strong>{{ date_str }}</strong> às <strong>{{ time_str }}</strong>.
+    </p>
+    <p class="text-sm text-gray-700 mb-6">Deseja forçar o agendamento mesmo com o horário ocupado?</p>
+    
+    <form method="POST" class="flex gap-4">
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="date" value="{{ date_str }}">
+        <input type="hidden" name="time" value="{{ time_str }}">
+        <input type="hidden" name="force" value="true">
+        {% for s_id in service_ids %}<input type="hidden" name="service_id[]" value="{{ s_id }}">{% endfor %}
+        {% for c_id in collab_ids %}<input type="hidden" name="collaborator_id[]" value="{{ c_id }}">{% endfor %}
+        {% for p in prices %}<input type="hidden" name="price[]" value="{{ p }}">{% endfor %}
+        
+        <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Sim, Agendar Mesmo Assim</button>
+        <a href="{{ url_for('agenda') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold px-6 py-2.5 rounded-xl text-sm flex items-center">Cancelar / Mudar Horário</a>
+    </form>
+</div>
+{% endblock %}

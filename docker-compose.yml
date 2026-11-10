@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: nail_salon_db
+    environment:
+      POSTGRES_USER: nailuser
+      POSTGRES_PASSWORD: nailpassword
+      POSTGRES_DB: salonschema
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nailuser -d salonschema"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nail-salon:
+    build: .
+    container_name: nail_salon_app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=chave-super-secreta-nail-salon-2026
+      - DATABASE_URL=postgresql://nailuser:nailpassword@db:5432/salonschema
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

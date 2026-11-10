@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-6">Pagamentos & Maquininha</h2>
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-pink-50 text-pink-700">
+            <tr><th class="p-4">Data/Hora</th><th class="p-4">Cliente</th><th class="p-4">Total</th><th class="p-4">Status</th><th class="p-4">Maquininha / Ação</th></tr>
+        </thead>
+        <tbody class="divide-y">
+            {% for a in appointments %}
+            {% set total = a.items | sum(attribute='price') %}
+            <tr>
+                <td class="p-4">{{ a.date }} {{ a.time }}</td>
+                <td class="p-4 font-medium">{{ a.client.name }}</td>
+                <td class="p-4 font-bold">R$ {{ "%.2f"|format(total) }}</td>
+                <td class="p-4">
+                    <span class="px-2 py-1 rounded-full text-xs font-bold {{ 'bg-emerald-100 text-emerald-700' if a.status == 'Pago' else 'bg-amber-100 text-amber-700' }}">{{ a.status }}</span>
+                </td>
+                <td class="p-4">
+                    <form method="POST" class="flex gap-2 items-center">
+                        <input type="hidden" name="appointment_id" value="{{ a.id }}">
+                        <select name="payment_method" class="border rounded-lg p-1 text-xs">
+                            <option value="Maquininha Crédito">Maquininha Crédito</option>
+                            <option value="Maquininha Débito">Maquininha Débito</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                        <select name="status" class="border rounded-lg p-1 text-xs">
+                            <option value="Pendente" {{ 'selected' if a.status == 'Pendente' else '' }}>Pendente</option>
+                            <option value="Pago" {{ 'selected' if a.status == 'Pago' else '' }}>Pago</option>
+                        </select>
+                        <button class="bg-pink-600 text-white px-3 py-1 rounded-lg text-xs font-bold">Confirmar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

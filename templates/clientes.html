@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Clientes</h2>
+    <form method="GET" class="flex gap-2">
+        <input type="text" name="q" value="{{ search }}" placeholder="Pesquisar nome ou telefone..." class="border rounded-xl px-4 py-2 text-sm">
+        <button class="bg-pink-600 text-white px-4 py-2 rounded-xl text-sm">Buscar</button>
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
+    <h3 class="font-bold mb-3 text-pink-600">Nova Cliente</h3>
+    <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <input type="hidden" name="action" value="add">
+        <input type="text" name="name" placeholder="Nome completo" required class="border p-2 rounded-xl text-sm">
+        <input type="text" name="phone" placeholder="WhatsApp (ex: 5511999999999)" required class="border p-2 rounded-xl text-sm">
+        <input type="email" name="email" placeholder="E-mail (opcional)" class="border p-2 rounded-xl text-sm">
+        <button class="bg-pink-600 text-white rounded-xl py-2 font-semibold text-sm hover:bg-pink-700">Cadastrar</button>
+    </form>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-pink-50 text-pink-700">
+            <tr><th class="p-4">Nome</th><th class="p-4">WhatsApp</th><th class="p-4">Status</th><th class="p-4">Ações</th></tr>
+        </thead>
+        <tbody class="divide-y">
+            {% for c in clients %}
+            <tr class="{{ 'bg-red-50' if c.is_blocked else '' }}">
+                <td class="p-4 font-medium">{{ c.name }}</td>
+                <td class="p-4">{{ c.phone }}</td>
+                <td class="p-4">
+                    {% if c.is_blocked %}
+                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">Bloqueada: {{ c.block_reason }}</span>
+                    {% else %}
+                        <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs">Ativa</span>
+                    {% endif %}
+                </td>
+                <td class="p-4 flex gap-2">
+                    <button onclick="openEditModal('{{ c.id }}', '{{ c.name }}', '{{ c.phone }}', '{{ c.email }}')" class="text-xs px-3 py-1 rounded-lg bg-blue-500 text-white">Editar</button>
+                    <form method="POST" class="inline">
+                        <input type="hidden" name="action" value="block">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button class="text-xs px-3 py-1 rounded-lg {{ 'bg-emerald-500 text-white' if c.is_blocked else 'bg-amber-500 text-white' }}">
+                            {{ 'Desbloquear' if c.is_blocked else 'Bloquear' }}
+                        </button>
+                    </form>
+                    <form method="POST" class="inline" onsubmit="return confirm('Excluir cliente?')">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button class="text-xs px-3 py-1 rounded-lg bg-red-500 text-white">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal de Edição -->
+<div id="editModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
+    <div class="bg-white p-6 rounded-2xl w-full max-w-md">
+        <h3 class="font-bold text-lg text-pink-600 mb-4">Editar Cliente</h3>
+        <form method="POST" class="space-y-3">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id" id="edit-id">
+            <input type="text" name="name" id="edit-name" required class="w-full border p-2 rounded-xl text-sm">
+            <input type="text" name="phone" id="edit-phone" required class="w-full border p-2 rounded-xl text-sm">
+            <input type="email" name="email" id="edit-email" class="w-full border p-2 rounded-xl text-sm">
+            <div class="flex gap-2 justify-end mt-4">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-200 rounded-xl text-sm">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-pink-600 text-white rounded-xl text-sm font-bold">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditModal(id, name, phone, email) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-phone').value = phone;
+    document.getElementById('edit-email').value = email;
+    document.getElementById('editModal').classList.remove('hidden');
+}
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

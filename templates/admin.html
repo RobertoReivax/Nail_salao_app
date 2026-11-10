@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-slate-800">Painel de Administração</h2>
+    <p class="text-xs text-slate-500">Configurações gerais do salão, comissões de colaboradores e acessos.</p>
+</div>
+
+<!-- NOME DO SALÃO -->
+<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+    <h3 class="font-bold text-lg text-pink-600 mb-3"><i class="fa-solid fa-store mr-2"></i>Identidade do Salão</h3>
+    <form method="POST" class="flex gap-3 max-w-lg">
+        <input type="hidden" name="action" value="update_salon">
+        <input type="text" name="salon_name" value="{{ salon_config.salon_name if salon_config else 'Nail Studio' }}" required class="border border-slate-200 p-2.5 rounded-xl text-sm flex-grow bg-slate-50">
+        <button class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition">Salvar Nome</button>
+    </form>
+</div>
+
+<!-- GERENCIAMENTO DE USUÁRIOS E SENHAS -->
+<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+    <h3 class="font-bold text-lg text-pink-600 mb-4"><i class="fa-solid fa-users-gear mr-2"></i>Gerenciamento de Usuários e Senhas</h3>
+    <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-pink-50/50 p-4 rounded-2xl border border-pink-100">
+        <input type="hidden" name="action" value="add_user">
+        <input type="text" name="new_username" placeholder="Novo Usuário" required class="border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+        <input type="password" name="new_password" placeholder="Senha" required class="border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+        <button class="bg-pink-600 hover:bg-pink-700 text-white rounded-xl py-2.5 font-bold text-sm md:col-span-2 transition shadow-sm">Criar Novo Usuário</button>
+    </form>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+                <tr><th class="p-3">Usuário</th><th class="p-3">Alterar Senha</th><th class="p-3">Ação</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for u in users %}
+                <tr>
+                    <td class="p-3 font-medium text-slate-800">{{ u.username }}</td>
+                    <td class="p-3">
+                        <form method="POST" class="flex gap-2">
+                            <input type="hidden" name="action" value="change_password">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <input type="password" name="updated_password" placeholder="Nova senha" required class="border border-slate-200 p-1.5 rounded-xl text-xs w-40 bg-white">
+                            <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">Atualizar</button>
+                        </form>
+                    </td>
+                    <td class="p-3">
+                        {% if u.username != 'admin' %}
+                        <form method="POST" class="inline" onsubmit="return confirm('Excluir este usuário?')">
+                            <input type="hidden" name="action" value="delete_user">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <button class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">Excluir</button>
+                        </form>
+                        {% else %}
+                        <span class="text-xs text-slate-400">Protegido</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- COLABORADORES E COMISSÕES -->
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-lg text-pink-600 mb-4">Colaboradores & Comissões (%)</h3>
+        <form method="POST" class="space-y-3 mb-6 bg-pink-50/50 p-4 rounded-2xl border border-pink-100">
+            <input type="hidden" name="action" value="add_collab">
+            <input type="text" name="name" placeholder="Nome da Colaboradora" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+            <input type="text" name="phone" placeholder="WhatsApp" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+            <div class="grid grid-cols-2 gap-2">
+                <select name="payout_cycle" class="border border-slate-200 p-2 rounded-xl text-sm bg-white">
+                    <option value="15_30">Dia 15 e 30</option>
+                    <option value="05_20">Dia 05 e 20</option>
+                </select>
+                <input type="number" step="0.1" name="commission_rate" placeholder="Comissão % (ex: 40)" value="40" required class="border border-slate-200 p-2 rounded-xl text-sm bg-white">
+            </div>
+            <button class="w-full bg-pink-600 hover:bg-pink-700 text-white rounded-xl py-2.5 font-bold text-sm transition">Cadastrar Colaboradora</button>
+        </form>
+
+        <div class="space-y-3">
+            {% for c in collaborators %}
+            <div class="flex justify-between items-center p-3.5 border border-slate-100 rounded-2xl bg-slate-50/50 text-sm flex-wrap gap-2">
+                <div>
+                    <span class="font-bold text-slate-800">{{ c.name }}</span>
+                    <span class="text-xs text-slate-500 block">Ciclo: {{ c.payout_cycle }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <form method="POST" class="flex gap-1 items-center">
+                        <input type="hidden" name="action" value="edit_collab_rate">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <input type="number" step="0.1" name="commission_rate" value="{{ c.commission_rate }}" class="border border-slate-200 rounded-xl p-1 text-xs w-16 text-center bg-white">
+                        <span class="text-xs font-bold text-slate-500">%</span>
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1 rounded-xl text-xs">Salvar</button>
+                    </form>
+                    <form method="POST" onsubmit="return confirm('Excluir colaborador?')">
+                        <input type="hidden" name="action" value="del_collab">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1 rounded-xl text-xs">Excluir</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- SERVIÇOS -->
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-lg text-pink-600 mb-4">Serviços</h3>
+        <form method="POST" class="space-y-3 mb-6 bg-pink-50/50 p-4 rounded-2xl border border-pink-100">
+            <input type="hidden" name="action" value="add_service">
+            <input type="text" name="name" placeholder="Nome do Serviço (ex: Blindagem)" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+            <input type="number" step="0.01" name="price" placeholder="Preço (R$)" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+            <input type="number" name="duration_min" placeholder="Duração em minutos" value="60" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white">
+            <button class="w-full bg-pink-600 hover:bg-pink-700 text-white rounded-xl py-2.5 font-bold text-sm transition">Cadastrar Serviço</button>
+        </form>
+
+        <div class="space-y-2">
+            {% for s in services %}
+            <div class="flex justify-between items-center p-3.5 border border-slate-100 rounded-2xl bg-slate-50/50 text-sm">
+                <div>
+                    <span class="font-bold text-slate-800">{{ s.name }}</span>
+                    <span class="text-xs text-slate-500 block">R$ {{ "%.2f"|format(s.price) }} ({{ s.duration_min }} min)</span>
+                </div>
+                <form method="POST" onsubmit="return confirm('Excluir serviço?')">
+                    <input type="hidden" name="action" value="del_service">
+                    <input type="hidden" name="id" value="{{ s.id }}">
+                    <button class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1 rounded-xl text-xs">Excluir</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-6">Configuração WhatsApp (Lembrete 24h Antes)</h2>
+<div class="bg-white p-6 rounded-2xl shadow-sm max-w-2xl">
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-bold mb-1">URL da API (Evolution API / Z-API)</label>
+            <input type="text" name="api_url" value="{{ config.api_url }}" class="w-full border p-2 rounded-xl text-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-bold mb-1">API Key / Token</label>
+            <input type="text" name="api_key" value="{{ config.api_key }}" class="w-full border p-2 rounded-xl text-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-bold mb-1">Mensagem Automática (24h antes)</label>
+            <textarea name="message_template" rows="4" class="w-full border p-2 rounded-xl text-sm">{{ config.message_template }}</textarea>
+            <p class="text-xs text-gray-400 mt-1">Variáveis disponíveis: <code>{cliente}</code>, <code>{data}</code>, <code>{hora}</code>, <code>{servicos}</code></p>
+        </div>
+        <label class="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" name="active" {{ 'checked' if config.active else '' }}> Ativar envio automático 24h antes
+        </label>
+        <button class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-700">Salvar Configurações</button>
+    </form>
+</div>
+{% endblock %}

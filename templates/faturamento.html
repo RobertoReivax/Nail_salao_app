@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-800">Faturamento & Acertos</h2>
+        <p class="text-xs text-slate-500">Acompanhe os repasses, gere relatórios e adicione comprovantes de Pix.</p>
+    </div>
+    <form method="GET" action="{{ url_for('faturamento') }}" class="flex gap-2 items-center flex-wrap">
+        <label class="text-xs font-bold text-slate-600">De:</label>
+        <input type="date" name="start_date" value="{{ start_date }}" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white shadow-sm">
+        <label class="text-xs font-bold text-slate-600">Até:</label>
+        <input type="date" name="end_date" value="{{ end_date }}" class="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white shadow-sm">
+        <button class="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition">Filtrar</button>
+        <a href="{{ url_for('faturamento_pdf', start_date=start_date, end_date=end_date) }}" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-pdf"></i> PDF Geral
+        </a>
+    </form>
+</div>
+
+<!-- RESUMO -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Faturamento Bruto</span>
+        <h3 class="text-2xl font-black text-slate-800 mt-1">R$ {{ "%.2f"|format(total_bruto) }}</h3>
+    </div>
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Parte do Salão</span>
+        <h3 class="text-2xl font-black text-emerald-600 mt-1">R$ {{ "%.2f"|format(total_salao) }}</h3>
+    </div>
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <span class="text-xs font-bold text-pink-600 uppercase tracking-wider">Total Colaboradores</span>
+        <h3 class="text-2xl font-black text-pink-600 mt-1">R$ {{ "%.2f"|format(total_colab) }}</h3>
+    </div>
+</div>
+
+<!-- DETALHES POR COLABORADOR -->
+<div class="space-y-6">
+    {% for cid, data in colab_stats.items() %}
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-4 border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="font-bold text-lg text-slate-800">{{ data.name }} <span class="text-xs font-normal text-slate-500">(Comissão: {{ data.rate }}%)</span></h3>
+                <span class="text-xs text-slate-400">Ciclo de pagamento: {{ data.cycle }}</span>
+            </div>
+            <div class="flex items-center gap-4 flex-wrap">
+                <div class="text-right">
+                    <span class="text-xs text-slate-400 block">A Receber</span>
+                    <span class="text-xl font-black text-pink-600">R$ {{ "%.2f"|format(data.a_receber) }}</span>
+                </div>
+                <a href="{{ url_for('faturamento_pdf', start_date=start_date, end_date=end_date, collab_id=data.id) }}" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                    <i class="fa-solid fa-file-pdf"></i> PDF Individual
+                </a>
+            </div>
+        </div>
+
+        <!-- PAINEL DE COMPROVANTE PIX -->
+        <div class="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-200/60 flex justify-between items-center flex-wrap gap-4">
+            <div>
+                {% if data.payout and data.payout.is_paid %}
+                    <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                        <i class="fa-solid fa-check"></i> Pago em {{ data.payout.paid_at }}
+                    </span>
+                    <p class="text-xs text-slate-600 mt-1"><strong>Comprovante/Pix:</strong> {{ data.payout.pix_receipt }}</p>
+                {% else %}
+                    <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                        <i class="fa-solid fa-clock"></i> Pendente de Acerto
+                    </span>
+                {% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('faturamento', start_date=start_date, end_date=end_date) }}" class="flex gap-2 items-center flex-wrap">
+                <input type="hidden" name="collaborator_id" value="{{ data.id }}">
+                <input type="hidden" name="start_date" value="{{ start_date }}">
+                <input type="hidden" name="end_date" value="{{ end_date }}">
+                <input type="text" name="pix_receipt" placeholder="Nº do Pix ou Comprovante" value="{{ data.payout.pix_receipt if data.payout else '' }}" class="border border-slate-200 rounded-xl px-3 py-1.5 text-xs w-52 bg-white">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-bold transition">Marcar como Pago</button>
+            </form>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr><th class="p-3">Data/Hora</th><th class="p-3">Cliente</th><th class="p-3">Serviço</th><th class="p-3">Valor Total</th><th class="p-3">Comissão ({{ data.rate }}%)</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for at in data.atendimentos %}
+                    <tr>
+                        <td class="p-3 text-slate-500">{{ at.data }} {{ at.hora }}</td>
+                        <td class="p-3 font-medium text-slate-800">{{ at.cliente }}</td>
+                        <td class="p-3 text-slate-600">{{ at.servico }}</td>
+                        <td class="p-3 text-slate-600">R$ {{ "%.2f"|format(at.valor) }}</td>
+                        <td class="p-3 font-bold text-pink-600">R$ {{ "%.2f"|format(at.comissao) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

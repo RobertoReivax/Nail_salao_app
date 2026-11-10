@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm mt-12">
+    <div class="text-center mb-6">
+        <i class="fa-solid fa-lock text-pink-600 text-3xl mb-2"></i>
+        <h2 class="text-xl font-bold text-gray-800">Acesso Restrito à Administração</h2>
+        <p class="text-xs text-gray-500 mt-1">Digite a senha de administrador para continuar.</p>
+    </div>
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Senha do Administrador</label>
+            <input type="password" name="password" required class="w-full border p-2.5 rounded-xl text-sm" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full bg-pink-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-pink-700">Acessar Painel</button>
+        <div class="text-center mt-3">
+            <a href="{{ url_for('agenda') }}" class="text-xs text-gray-500 hover:underline">Voltar para a Agenda</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

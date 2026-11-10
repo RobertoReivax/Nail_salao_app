@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-slate-800">Agenda & Calendário</h2>
+    <form method="GET" class="flex gap-2">
+        <input type="text" name="q" value="{{ search }}" placeholder="Pesquisar cliente ou data..." class="border border-slate-200 rounded-xl px-4 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-pink-500 outline-none">
+        <button class="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition">Pesquisar</button>
+    </form>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-pink-600 mb-4 flex items-center gap-2"><i class="fa-solid fa-calendar-plus"></i> Novo Agendamento</h3>
+        <form method="POST" class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Pesquisar Cliente</label>
+                <input type="text" id="client-search-input" placeholder="Nome ou telefone..." oninput="searchClients(this.value)" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm mb-2 bg-slate-50">
+                <select name="client_id" id="client-select" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-slate-50">
+                    <option value="">Selecione a Cliente</option>
+                    {% for c in clients %}<option value="{{ c.id }}">{{ c.name }} ({{ c.phone }})</option>{% endfor %}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Data (dd/mm/aaaa)</label>
+                    <input type="date" name="date" id="appointment-date" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Horário</label>
+                    <input type="time" name="time" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-slate-50">
+                </div>
+            </div>
+            <div id="services-container" class="space-y-2">
+                <div class="service-row p-3 bg-pink-50/50 rounded-2xl border border-pink-100 space-y-2">
+                    <select name="service_id[]" required class="w-full border border-slate-200 p-2 rounded-xl text-sm bg-white" onchange="updatePrice(this)">
+                        <option value="">Selecione o Serviço</option>
+                        {% for s in services %}<option value="{{ s.id }}" data-price="{{ s.price }}">{{ s.name }} (R$ {{ s.price }})</option>{% endfor %}
+                    </select>
+                    <select name="collaborator_id[]" required class="w-full border border-slate-200 p-2 rounded-xl text-sm bg-white">
+                        <option value="">Selecione a Colaboradora</option>
+                        {% for col in collaborators %}<option value="{{ col.id }}">{{ col.name }}</option>{% endfor %}
+                    </select>
+                    <input type="number" step="0.01" name="price[]" placeholder="Preço R$" required class="w-full border border-slate-200 p-2 rounded-xl text-sm price-input bg-white">
+                </div>
+            </div>
+            <button type="button" onclick="addServiceRow()" class="text-xs text-pink-600 font-bold hover:underline">+ Adicionar outro serviço</button>
+            <button type="submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-pink-200 transition">Salvar Agendamento</button>
+        </form>
+    </div>
+
+    <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+    <h3 class="font-bold mb-4 text-lg text-slate-800">Gerenciar e Editar Agendamentos</h3>
+    {% if appointments %}
+        <div class="space-y-4">
+        {% for a in appointments %}
+        <div class="border border-slate-100 p-4 rounded-2xl bg-slate-50/50">
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <span class="font-bold text-slate-800 text-base">{{ a.client.name }}</span>
+                    <span class="text-xs text-slate-500 ml-2">({{ a.client.phone }})</span>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <form method="POST" action="{{ url_for('editar_agendamento', appt_id=a.id) }}" class="flex gap-2 items-center">
+                        <input type="date" name="date" value="{{ a.date }}" class="border border-slate-200 rounded-xl p-1.5 text-xs bg-white">
+                        <input type="time" name="time" value="{{ a.time }}" class="border border-slate-200 rounded-xl p-1.5 text-xs bg-white">
+                        <button class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition">Alterar Data/Hora</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('excluir_agendamento', appt_id=a.id) }}" onsubmit="return confirm('Excluir este agendamento inteiro?')">
+                        <button class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition">Excluir</button>
+                    </form>
+                    <span class="text-xs px-3 py-1 rounded-full font-bold {{ 'bg-emerald-100 text-emerald-700' if a.status == 'Pago' else 'bg-amber-100 text-amber-700' }}">{{ a.status }}</span>
+                </div>
+            </div>
+            <div class="border-t border-slate-200/60 pt-3 space-y-2">
+                {% for item in a.items %}
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-xl border border-slate-100 text-sm">
+                    <span class="font-medium text-pink-600">{{ item.service.name }}</span>
+                    <form method="POST" action="{{ url_for('editar_item_agenda', item_id=item.id) }}" class="flex gap-2 items-center">
+                        <select name="collaborator_id" class="border border-slate-200 rounded-xl p-1 text-xs">
+                            {% for col in collaborators %}
+                            <option value="{{ col.id }}" {{ 'selected' if col.id == item.collaborator_id else '' }}>{{ col.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" step="0.01" name="price" value="{{ item.price }}" class="border border-slate-200 rounded-xl p-1 w-24 text-xs">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-xl text-xs">Salvar</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('remover_item_agenda', item_id=item.id) }}" onsubmit="return confirm('Remover serviço?')">
+                        <button class="bg-rose-400 hover:bg-rose-500 text-white px-3 py-1 rounded-xl text-xs">Remover</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-sm text-slate-400">Nenhum agendamento encontrado.</p>
+    {% endif %}
+</div>
+
+<script>
+function updatePrice(sel) {
+    const price = sel.options[sel.selectedIndex].getAttribute('data-price');
+    if (price) sel.closest('.service-row').querySelector('.price-input').value = price;
+}
+function addServiceRow() {
+    const container = document.getElementById('services-container');
+    const clone = container.firstElementChild.cloneNode(true);
+    clone.querySelector('.price-input').value = '';
+    container.appendChild(clone);
+}
+async function searchClients(query) {
+    if (query.length < 2) return;
+    const res = await fetch(`/api/clients_search?q=${encodeURIComponent(query)}`);
+    const clients = await res.json();
+    const select = document.getElementById('client-select');
+    select.innerHTML = '<option value="">Selecione a Cliente</option>';
+    clients.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        events: '/api/appointments',
+        dateClick: function(info) {
+            // Preenche automaticamente o campo de data do formulário ao clicar no dia do calendário
+            document.getElementById('appointment-date').value = info.dateStr;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}
